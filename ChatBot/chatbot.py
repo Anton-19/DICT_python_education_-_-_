@@ -26,5 +26,23 @@ tik = int(input("Enter a positive number: "))
 for i in range(tik + 1):             # підрахунок від 0 до введеного числа
     print(f"{i} !")
 
-# Завершення програми
 print("Completed, have a nice day!")       # виведення завершення
+
+print("Let's test your programming knowledge.")   #тест
+
+
+correct_answer = "2"                # тестове питання
+while True:
+    print("Why do we use methods?")
+    print("1. To repeat a statement multiple times.")
+    print("2. To decompose a program into several small subroutines.")
+    print("3. To determine the execution time of a program.")
+    print("4. To interrupt the execution of a program.")
+
+    answer = input("Your answer: ")
+
+    if answer == correct_answer:
+        print("Congratulations, have a nice day!")
+        break
+    else:
+        print("Please, try again.")
