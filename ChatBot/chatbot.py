@@ -1,7 +1,7 @@
 bot_name = "AntBot"
 birth_year = 2024
 
-print(f"Hello! My name is {bot_name}.")      # зривітання від бота
+print(f"Hello! My name is {bot_name}.")      # привітання від бота
 print(f"I was created in {birth_year}.")
 
 print("Please, remind me your name.")        # запит імені користувача
