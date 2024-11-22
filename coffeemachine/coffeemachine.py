@@ -9,7 +9,7 @@ class CoffeeMachine:
         self.state = "choosing_action"
 
     def show_remaining(self):
-        # функція для виведення поточного стану кавомашини                 remaining
+        # функція для виведення поточного стану кавомашини
         print("\nThe coffee machine has:")
         print(f"{self.water} of water")
         print(f"{self.milk} of milk")
@@ -22,10 +22,10 @@ class CoffeeMachine:
         if self.state == "choosing_action":
             if user_input == "buy":
                 self.state = "choosing_coffee"
-                print("What do you want to buy? 1 - espresso, 2 - latte, 3 - cappuccino, back - to main menu:")   #Що ти хочеш купити?
+                print("What do you want to buy? 1 - espresso, 2 - latte, 3 - cappuccino, back - to main menu:")
             elif user_input == "fill":
                 self.state = "filling_water"
-                print("Write how many ml of water you want to add:")          # скільки мл води ви хочете додати:
+                print("Write how many ml of water you want to add:")
             elif user_input == "take":
                 self.give_money()
                 self.state = "choosing_action"
@@ -34,7 +34,7 @@ class CoffeeMachine:
             elif user_input == "exit":
                 self.state = "exit"
             else:
-                print("Invalid action")       #Недійсна дія
+                print("Invalid action")
 
         elif self.state == "choosing_coffee":
             if user_input == "1":
@@ -46,44 +46,60 @@ class CoffeeMachine:
             elif user_input == "back":
                 self.state = "choosing_action"
             else:
-                print("Invalid choice")      #Недійсна дія
+                print("Invalid choice")
 
         elif self.state == "filling_water":
+            if not user_input.isdigit():
+                print("Invalid input. Please enter a number.")
+                print("Write how many ml of water you want to add:")
+                return
             self.water += int(user_input)
             self.state = "filling_milk"
-            print("Write how many ml of milk you want to add:")              # скільки мл молока ви хочете додати
+            print("Write how many ml of milk you want to add:")
 
         elif self.state == "filling_milk":
+            if not user_input.isdigit():
+                print("Invalid input. Please enter a number.")
+                print("Write how many ml of milk you want to add:")
+                return
             self.milk += int(user_input)
             self.state = "filling_beans"
-            print("Write how many grams of coffee beans you want to add:")     # напишіть, скільки грамів кавових зерен ви хочете додати
+            print("Write how many grams of coffee beans you want to add:")
 
         elif self.state == "filling_beans":
+            if not user_input.isdigit():
+                print("Invalid input. Please enter a number.")
+                print("Write how many grams of coffee beans you want to add:")
+                return
             self.coffee_beans += int(user_input)
             self.state = "filling_cups"
-            print("Write how many disposable coffee cups you want to add:")      #Напишіть, скільки одноразових чашок для кави ви хочете додати:
+            print("Write how many disposable coffee cups you want to add:")
 
         elif self.state == "filling_cups":
+            if not user_input.isdigit():
+                print("Invalid input. Please enter a number.")
+                print("Write how many disposable coffee cups you want to add:")
+                return
             self.disposable_cups += int(user_input)
             self.state = "choosing_action"
 
     def prepare_coffee(self, required_water, required_milk, required_beans, price):
         # Функція для перевірки ресурсів і приготування кави
         if self.water < required_water:
-            print("Sorry, not enough water!")         # недостатньо води
+            print("Sorry, not enough water!")
         elif self.milk < required_milk:
-            print("Sorry, not enough milk!")         # недостатньо молока
+            print("Sorry, not enough milk!")
         elif self.coffee_beans < required_beans:
-            print("Sorry, not enough coffee beans!")    # недостатньо кави
+            print("Sorry, not enough coffee beans!")
         elif self.disposable_cups < 1:
-            print("Sorry, not enough disposable cups!")    # нема стаканчиків
+            print("Sorry, not enough disposable cups!")
         else:
             self.water -= required_water
             self.milk -= required_milk
             self.coffee_beans -= required_beans
             self.disposable_cups -= 1
             self.money += price
-            print("I have enough resources, making you a coffee!")       # У мене достатньо ресурсів, щоб зробити вам каву
+            print("I have enough resources, making you a coffee!")
 
         self.state = "choosing_action"
 
