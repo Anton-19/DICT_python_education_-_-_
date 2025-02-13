@@ -1,0 +1,5 @@
+Anton: 2/5 in level 2 (integral squares of 11-29).
+Antonn: 5/5 in level 1 (simple operations with numbers 2-9).
+An: 0/5 in level 2 (integral squares of 11-29).
+y: 5/5 in level 1 (simple operations with numbers 2-9).
+Anto0n: 2/5 in level 2 (integral squares of 11-29).
