@@ -1,0 +1,6 @@
+Ivan 200
+Anton 250
+Ant 200
+qqq 1050
+Ton 1250
+ww 100
