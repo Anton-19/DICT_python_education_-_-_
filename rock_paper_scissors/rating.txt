@@ -1,6 +1,8 @@
 Ivan 200
 Anton 250
 Ant 200
-qqq 1050
+qqq 2100
 Ton 1250
 ww 100
+www 500
+eee 300

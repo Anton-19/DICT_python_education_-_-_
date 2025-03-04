@@ -3,8 +3,9 @@ import os
 
 RATING_FILE = "rating.txt"
 
+
 def read_ratings():
-    #Читає рейтинг із файлу
+    # Читає рейтинг із файлу
     ratings = {}
     if os.path.exists(RATING_FILE):
         with open(RATING_FILE, "r") as file:
@@ -15,11 +16,13 @@ def read_ratings():
                     ratings[name] = int(score)
     return ratings
 
+
 def write_ratings(ratings):
-    # записує рейтинг у файл
+    # Записує рейтинг у файл
     with open(RATING_FILE, "w") as file:
         for name, score in ratings.items():
             file.write(f"{name} {score}\n")
+
 
 def ask_name(ratings):
     # Запитує ім'я користувача і отримує його рахунок
@@ -27,24 +30,35 @@ def ask_name(ratings):
     print(f"Hello, {user_name}")
     return user_name, ratings.get(user_name, 0)
 
+
 def ask_options():
     # Запитує список знаків для гри
-    user_input = input("Enter options separated by commas (or press Enter for default 15 options): ").strip()
+    user_input = input("Enter options separated by commas (or press Enter for default Rock, Paper, Scissors): ").strip()
+
     default_options = [
         "rock", "gun", "lightning", "devil", "dragon", "water", "air", "paper",
         "sponge", "wolf", "tree", "human", "snake", "scissors", "fire"
     ]
-    options = [opt.strip().lower() for opt in user_input.split(",") if opt.strip()] if user_input else default_options
-    print("Okay, let's start.")
+
+    if not user_input:
+        options = ["rock", "paper", "scissors"]  # Якщо введення порожнє → стандартний набір
+    else:
+        options = [opt.strip().lower() for opt in user_input.split(",") if opt.strip()]
+
     return options
 
+
 def make_win_list(options):
-    # Стврлює список переможних ходів
+    # Створює список переможних ходів для кожної опції
     win_list = {}
     n = len(options)
+
     for i, choice in enumerate(options):
-        win_list[choice] = options[i + 1: i + 1 + (n // 2)] + options[:(i + 1 + (n // 2)) % n]
+        # Переможені ходи – це наступні n//2 елементів у списку (по колу)
+        win_list[choice] = [options[(i + j) % n] for j in range(1, (n // 2) + 1)]
+
     return win_list
+
 
 def check_winner(user_choice, computer_choice, win_list):
     # Визначає результат гри
@@ -55,8 +69,8 @@ def check_winner(user_choice, computer_choice, win_list):
     else:
         return f"Sorry, but the computer chose {computer_choice}", 0                     # Комп'ютер переміг
 
-def game_loop(user_name, user_score, options, win_list, ratings):
 
+def game_loop(user_name, user_score, options, win_list, ratings):
     while True:
         user_choice = input("Enter your choice (!rating, !exit, or one of the options): ").strip().lower()
 
@@ -78,6 +92,7 @@ def game_loop(user_name, user_score, options, win_list, ratings):
             user_score += score
         else:
             print("Invalid input.")
+
 
 # Запуск програми
 ratings = read_ratings()
