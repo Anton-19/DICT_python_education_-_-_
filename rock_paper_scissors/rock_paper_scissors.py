@@ -41,7 +41,7 @@ def ask_options():
     ]
 
     if not user_input:
-        options = ["rock", "paper", "scissors"]  # Якщо введення порожнє → стандартний набір
+        options = ["rock", "paper", "scissors"]  # Якщо введення порожнє - стандартний набір
     else:
         options = [opt.strip().lower() for opt in user_input.split(",") if opt.strip()]
 
@@ -49,15 +49,15 @@ def ask_options():
 
 
 def make_win_list(options):
-    # Створює список переможних ходів для кожної опції
     win_list = {}
     n = len(options)
 
     for i, choice in enumerate(options):
-        # Переможені ходи – це наступні n//2 елементів у списку (по колу)
-        win_list[choice] = [options[(i + j) % n] for j in range(1, (n // 2) + 1)]
+        win_against = [options[(i - j) % n] for j in range(1, (n // 2) + 1)]
+        win_list[choice] = win_against
 
     return win_list
+
 
 
 def check_winner(user_choice, computer_choice, win_list):
