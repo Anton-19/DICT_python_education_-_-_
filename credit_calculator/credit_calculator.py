@@ -50,6 +50,13 @@ def check_params(args):
     if args.interest is None or args.interest <= 0:
         return False
 
+    if args.principal is not None and args.principal <= 0:
+        return False
+    if args.payment is not None and args.payment <= 0:
+        return False
+    if args.periods is not None and args.periods <= 0:
+        return False
+
     if args.type == "diff":
         return args.principal is not None and args.periods is not None and args.payment is None
 
@@ -63,13 +70,18 @@ def check_params(args):
 # Головна функція
 def main():
     parser = argparse.ArgumentParser(description="Credit Calculator")
-    parser.add_argument("--type", choices=["annuity", "diff"], required=True, help="Type of loan payment")
+    parser.add_argument("--type", help="Type of loan payment")
     parser.add_argument("--principal", type=float, help="Loan principal")
     parser.add_argument("--payment", type=float, help="Monthly payment (for annuity only)")
     parser.add_argument("--periods", type=int, help="Number of months")
     parser.add_argument("--interest", type=float, help="Loan interest (without % sign)")
 
     args = parser.parse_args()
+
+    # Перевірка, чи значення --type є коректним
+    if args.type not in ["annuity", "diff"]:
+        print("Incorrect parameters.")
+        return
 
     if not check_params(args):
         print("Incorrect parameters.")
@@ -99,5 +111,7 @@ python credit_calculator/credit_calculator.py --type=diff --principal=500000 --p
 python credit_calculator/credit_calculator.py --type=annuity --payment=8722 --periods=120 --interest=5.6
 python credit_calculator/credit_calculator.py --type=annuity --principal=500000 --payment=23000 --interest=7.8
 python credit_calculator/credit_calculator.py --type=diff --principal=1000000 --periods=10 --interest=10
+python credit_calculator/credit_calculator.py --type=annuity --principal=1000000 --periods=-60 --interest=10
+python credit_calculator/credit_calculator.py --type=qqqwww --principal=1000000 --periods=10 --interest=10
 
 '''
