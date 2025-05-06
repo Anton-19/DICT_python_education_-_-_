@@ -1,172 +1,198 @@
-import random
 import sqlite3
+import random
 
 
-# Ініціалізація бази даних
-def init_db():
-    conn = sqlite3.connect('card.s3db')
-    cur = conn.cursor()
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS card (
-            id INTEGER PRIMARY KEY,
-            number TEXT,
-            pin TEXT,
-            balance INTEGER DEFAULT 0
-        );
-    ''')
-    conn.commit()
-    return conn, cur
+# Підключення до бази даних
+def create_connection():
+    return sqlite3.connect('card.s3db')
 
 
-# Генерація картки та PIN
-def generate_card_number():
-    IIN = "400000"
-    account_id = str(random.randint(0, 999999999)).zfill(9)
-    partial = IIN + account_id
-    return partial + str(luhn_checksum(partial))
+# Створення таблиці
+def create_table():
+    with create_connection() as conn:
+        cur = conn.cursor()
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS card (
+                id INTEGER PRIMARY KEY,
+                number TEXT,
+                pin TEXT,
+                balance INTEGER DEFAULT 0
+            )
+        ''')
+        conn.commit()
 
 
-def generate_pin():
-    return str(random.randint(0, 9999)).zfill(4)
-
-
-def luhn_checksum(number):
-    digits = [int(d) for d in number]
+# Алгоритм Луна — переврка контрольної суми
+def luhn_checksum(card_number):
+    digits = [int(d) for d in card_number]
     for i in range(0, len(digits), 2):
         digits[i] *= 2
         if digits[i] > 9:
             digits[i] -= 9
-    return (10 - sum(digits) % 10) % 10
+    return sum(digits) % 10
 
 
-def is_valid_luhn(number):
-    checksum = int(number[-1])
-    return luhn_checksum(number[:-1]) == checksum
-
-
-# Робота з акаунтом
-def create_account(cur, conn):
+# Генерація номера картки
+def generate_number():
     while True:
-        card = generate_card_number()
-        cur.execute("SELECT number FROM card WHERE number = ?", (card,))
-        if not cur.fetchone():
-            break
+        number = '400000' + ''.join(str(random.randint(0, 9)) for _ in range(9))
+        checksum = (10 - luhn_checksum(number + '0')) % 10
+        card_number = number + str(checksum)
+        if not card_exists(card_number):
+            return card_number
+
+
+# Генерація пін коду картки
+def generate_pin():
+    return ''.join(str(random.randint(0, 9)) for _ in range(4))
+
+
+# Перевірка, чи існує картка в базі
+def card_exists(card_number):
+    with create_connection() as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM card WHERE number = ?', (card_number,))
+        return cur.fetchone() is not None
+
+# Створення рахунку та збереження у базі
+def create_account():
+    number = generate_number()
     pin = generate_pin()
-    cur.execute("INSERT INTO card (number, pin) VALUES (?, ?)", (card, pin))
-    conn.commit()
+    with create_connection() as conn:
+        cur = conn.cursor()
+        cur.execute('INSERT INTO card (number, pin) VALUES (?, ?)', (number, pin))
+        conn.commit()
     print("\nYour card has been created")
-    print("Your card number:\n" + card)
-    print("Your card PIN:\n" + pin)
+    print("Your card number:")
+    print(number)
+    print("Your card PIN:")
+    print(pin)
 
 
-def login(cur):
-    card = input("\nEnter your card number:\n>")
-    pin = input("Enter your PIN:\n>")
-    cur.execute("SELECT * FROM card WHERE number = ? AND pin = ?", (card, pin))
-    return cur.fetchone()
+# Вхід до акаунту за номером і пін кодом
+def login():
+    print("\nEnter your card number:")
+    number = input("> ")
+    print("Enter your PIN:")
+    pin = input("> ")
+    with create_connection() as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM card WHERE number = ? AND pin = ?', (number, pin))
+        account = cur.fetchone()
+        if account:
+            print("\nYou have successfully logged in!")
+            return number
+        else:
+            print("\nWrong card number or PIN!")
+            return None
+
+# Баланс облікового запису
+def get_balance(card_number):
+    with create_connection() as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT balance FROM card WHERE number = ?', (card_number,))
+        return cur.fetchone()[0]
 
 
-# Операції з акаунтом
-def show_balance(cur, number):
-    cur.execute("SELECT balance FROM card WHERE number = ?", (number,))
-    print(f"\nBalance: {cur.fetchone()[0]}")
+# Поповнення рахунку
+def add_income(card_number):
+    print("\nEnter income:")
+    try:
+        amount = int(input("> "))
+        with create_connection() as conn:
+            cur = conn.cursor()
+            cur.execute('UPDATE card SET balance = balance + ? WHERE number = ?', (amount, card_number))
+            conn.commit()
+        print("Income was added!")
+    except ValueError:
+        print("Invalid amount!")
 
 
-def add_income(cur, conn, number):
-    income = int(input("\nEnter income:\n>"))
-    cur.execute("UPDATE card SET balance = balance + ? WHERE number = ?", (income, number))
-    conn.commit()
-    print("Income was added!")
+# Перевірка, чи проходить алгоритм Луна
+def is_valid_luhn(card_number):
+    return luhn_checksum(card_number) == 0
 
 
-def do_transfer(cur, conn, sender_number):
+# Переказ грошей на іншу картку
+def transfer(card_number):
     print("\nTransfer")
-    target = input("Enter card number:\n>")
-    if target == sender_number:
+    print("Enter card number:")
+    target = input("> ")
+    if target == card_number:
         print("You can't transfer money to the same account!")
         return
+
     if not is_valid_luhn(target):
         print("Probably you made a mistake in the card number. Please try again!")
         return
-    cur.execute("SELECT * FROM card WHERE number = ?", (target,))
-    if not cur.fetchone():
+
+    if not card_exists(target):
         print("Such a card does not exist.")
         return
 
-    amount = int(input("Enter how much money you want to transfer:\n>"))
-    cur.execute("SELECT balance FROM card WHERE number = ?", (sender_number,))
-    current_balance = cur.fetchone()[0]
-    if amount > current_balance:
-        print("Not enough money!")
-        return
+    print("Enter how much money you want to transfer:")
+    try:
+        amount = int(input("> "))
+        if get_balance(card_number) < amount:
+            print("Not enough money!")
+            return
+        with create_connection() as conn:
+            cur = conn.cursor()
+            cur.execute('UPDATE card SET balance = balance - ? WHERE number = ?', (amount, card_number))
+            cur.execute('UPDATE card SET balance = balance + ? WHERE number = ?', (amount, target))
+            conn.commit()
+        print("Success!")
+    except ValueError:
+        print("Invalid amount!")
 
-    cur.execute("UPDATE card SET balance = balance - ? WHERE number = ?", (amount, sender_number))
-    cur.execute("UPDATE card SET balance = balance + ? WHERE number = ?", (amount, target))
-    conn.commit()
-    print("Success!")
 
-
-def close_account(cur, conn, number):
-    cur.execute("DELETE FROM card WHERE number = ?", (number,))
-    conn.commit()
+# Закриття акаунту
+def close_account(card_number):
+    with create_connection() as conn:
+        cur = conn.cursor()
+        cur.execute('DELETE FROM card WHERE number = ?', (card_number,))
+        conn.commit()
     print("The account has been closed!")
 
 
-# Меню
-def main_menu():
-    print("\n1. Create an account")
-    print("2. Log into account")
-    print("0. Exit")
-
-
-def account_menu():
-    print("\n1. Balance")
-    print("2. Add income")
-    print("3. Do transfer")
-    print("4. Close account")
-    print("5. Log out")
-    print("0. Exit")
-
-
-def run_account_session(cur, conn, account):
+# Меню після входу
+def user_menu(card_number):
     while True:
-        account_menu()
-        choice = input(">")
+        print("\n1. Balance\n2. Add income\n3. Do transfer\n4. Close account\n5. Log out\n0. Exit")
+        choice = input("> ")
         if choice == "1":
-            show_balance(cur, account[1])
+            print("\nBalance:", get_balance(card_number))
         elif choice == "2":
-            add_income(cur, conn, account[1])
+            add_income(card_number)
         elif choice == "3":
-            do_transfer(cur, conn, account[1])
+            transfer(card_number)
         elif choice == "4":
-            close_account(cur, conn, account[1])
+            close_account(card_number)
             break
         elif choice == "5":
             print("You have successfully logged out!")
             break
         elif choice == "0":
-            print("Bye!")
+            print("\nBye!")
             exit()
 
 
-# Головна
-def main():
-    conn, cur = init_db()
+# Меню програми
+def main_menu():
+    create_table()
     while True:
-        main_menu()
-        choice = input(">")
+        print("\n1. Create an account\n2. Log into account\n0. Exit")
+        choice = input("> ")
         if choice == "1":
-            create_account(cur, conn)
+            create_account()
         elif choice == "2":
-            account = login(cur)
-            if account:
-                print("You have successfully logged in!")
-                run_account_session(cur, conn, account)
-            else:
-                print("Wrong card number or PIN!")
+            card = login()
+            if card:
+                user_menu(card)
         elif choice == "0":
-            print("Bye!")
-            break
+            print("\nBye!")
+            exit()
+
 
 if __name__ == "__main__":
-    main()
+    main_menu()
