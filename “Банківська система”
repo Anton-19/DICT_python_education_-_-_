@@ -118,6 +118,11 @@ def transfer(card_number):
     print("\nTransfer")
     print("Enter card number:")
     target = input("> ")
+
+    if not target.isdigit():
+        print("Invalid input! Card number must be numeric.")
+        return
+
     if target == card_number:
         print("You can't transfer money to the same account!")
         return
