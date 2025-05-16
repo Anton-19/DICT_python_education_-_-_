@@ -95,7 +95,7 @@ def save_text_file(content: str, filename: str, directory: str) -> bool:
 
 
 def process_single(page_number: int, article_type: str, base_url: str, year: str):
-    print(f"\n🔎 Processing Page {page_number}...")
+    print(f"\n Processing Page {page_number}...")
     page_url = f"{base_url}?sort=PubDate&year={year}&page={page_number}"
     page_folder = f"Page_{page_number}"
     soup = fetch_html(page_url)
@@ -117,7 +117,7 @@ def process_single(page_number: int, article_type: str, base_url: str, year: str
         if text:
             filename = clean_filename(title) + ".txt"
             if save_text_file(text, filename, page_folder):
-                print(f"  ✔ Saved: {title}")
+                print(f"   Saved: {title}")
         else:
             print(f"[!] Could not extract content for: {url}")
 
@@ -131,7 +131,7 @@ def main():
         for page in range(1, num_pages + 1):
             process_single(page, article_type, base_url, year)
 
-        print("\n✅ Done processing all pages.")
+        print("\n Done processing all pages.")
 
     except Exception as e:
         print(f"[FATAL ERROR] {e}")
