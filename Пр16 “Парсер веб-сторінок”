@@ -1,0 +1,141 @@
+import os
+import string
+import requests
+from bs4 import BeautifulSoup
+
+
+def prompt_user() -> tuple[int, str]:
+    try:
+        pages = int(input("Enter the number of pages to scrape: "))
+        article_type = input(
+            "Enter the type of articles to search for "
+            "(e.g. News, Research Highlight, News & Views, Comment, Nature Briefing): "
+        ).strip()
+        return pages, article_type
+    except ValueError:
+        print("[!] Please enter a valid integer for pages.")
+        raise
+
+
+def clean_filename(title: str) -> str:
+    translator = str.maketrans('', '', string.punctuation)
+    return title.translate(translator).replace(" ", "_")
+
+
+def fetch_html(url: str) -> BeautifulSoup | None:
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return BeautifulSoup(response.content, 'html.parser')
+    except requests.RequestException as e:
+        print(f"[ERROR] Failed to fetch URL: {url}\n  {e}")
+        return None
+
+
+def extract_article(soup: BeautifulSoup, desired_type: str) -> list[tuple[str, str]]:
+    articles = []
+    for article in soup.find_all('article'):
+        type_tag = article.find('span', {'data-test': 'article.type'})
+        if type_tag and type_tag.text.strip() == desired_type:
+            link_tag = article.find('a', {'data-track-action': 'view article'})
+            title_tag = article.find('h3')
+            if link_tag and title_tag:
+                url = "https://www.nature.com" + link_tag['href']
+                title = title_tag.text.strip()
+                articles.append((url, title))
+    return articles
+
+# Витягує основний текст статті залежно від її типу
+def extract_article_text(soup: BeautifulSoup, article_type: str) -> str | None:
+
+    selectors_by_type = {
+        'News': [
+            'div.c-article-body',
+            'div.article__body',
+            'div.article__body.cleared',
+            'div.article-item__body',
+            'section#content',
+            'article div > p'
+        ],
+        'Research Highlight': ['div.article-item__body'],
+        'News & Views': ['div.c-article-body', 'div.c-article-section'],
+        'Comment': ['div.c-article-body'],
+        'Nature Briefing': ['p']
+    }
+
+    selectors = selectors_by_type.get(article_type, [])
+
+    for selector in selectors:
+        if selector == 'p':
+            paragraphs = soup.find_all('p')
+            if paragraphs:
+                return "\n".join(p.get_text(strip=True) for p in paragraphs)
+        elif selector.endswith('> p'):
+            paragraphs = soup.select(selector)
+            if paragraphs:
+                return "\n".join(p.get_text(strip=True) for p in paragraphs)
+        else:
+            block = soup.select_one(selector)
+            if block:
+                return block.get_text(separator='\n', strip=True)
+
+    return None
+
+
+def save_text_file(content: str, filename: str, directory: str) -> bool:
+    try:
+        os.makedirs(directory, exist_ok=True)
+        path = os.path.join(directory, filename)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        return True
+    except Exception as e:
+        print(f"[ERROR] Failed to save file: {filename}\n  {e}")
+        return False
+
+
+def process_single(page_number: int, article_type: str, base_url: str, year: str):
+    print(f"\n🔎 Processing Page {page_number}...")
+    page_url = f"{base_url}?sort=PubDate&year={year}&page={page_number}"
+    page_folder = f"Page_{page_number}"
+    soup = fetch_html(page_url)
+
+    if not soup:
+        print(f"[!] Skipping page {page_number} due to fetch error.")
+        return
+
+    articles = extract_article(soup, article_type)
+    if not articles:
+        print(f"[!] No articles of type '{article_type}' found on page {page_number}.")
+        return
+
+    for url, title in articles:
+        article_soup = fetch_html(url)
+        if not article_soup:
+            continue
+        text = extract_article_text(article_soup, article_type)
+        if text:
+            filename = clean_filename(title) + ".txt"
+            if save_text_file(text, filename, page_folder):
+                print(f"  ✔ Saved: {title}")
+        else:
+            print(f"[!] Could not extract content for: {url}")
+
+
+def main():
+    try:
+        num_pages, article_type = prompt_user()
+        base_url = "https://www.nature.com/nature/articles"
+        year = "2022"
+
+        for page in range(1, num_pages + 1):
+            process_single(page, article_type, base_url, year)
+
+        print("\n✅ Done processing all pages.")
+
+    except Exception as e:
+        print(f"[FATAL ERROR] {e}")
+
+
+if __name__ == "__main__":
+    main()
